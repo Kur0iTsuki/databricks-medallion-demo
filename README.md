@@ -5,7 +5,7 @@ A dependency-free Medallion Lakehouse demonstration using Kaggle's real-world **
 ## Flow
 
 ```text
-Synthetic JSON events -> Bronze (raw input) -> Silver (validated + de-duplicated) -> Gold (daily aggregates)
+Kaggle Online Retail CSV -> Bronze (raw input) -> Silver (validated + de-duplicated) -> Gold (daily aggregates)
 ```
 
 - **Bronze:** Kaggle Online Retail purchase-line events.
