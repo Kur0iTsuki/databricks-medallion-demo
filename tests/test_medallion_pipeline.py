@@ -4,8 +4,10 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from medallion_pipeline import build_gold, build_silver, load_online_retail_csv
+from run_kaggle_pipeline import resolve_csv_path
 
 
 class MedallionPipelineTests(unittest.TestCase):
@@ -84,6 +86,18 @@ class MedallionPipelineTests(unittest.TestCase):
             records = load_online_retail_csv(Path(dataset.name))
 
         self.assertEqual(records[0]["amount_cents"], 4000)
+
+    def test_primary_runner_explains_how_to_download_a_missing_dataset(self):
+        missing_path = Path("data/raw/Online_Retail.csv")
+
+        with self.assertRaisesRegex(FileNotFoundError, "scripts/download_kaggle_dataset.sh"):
+            resolve_csv_path(missing_path)
+
+    def test_readme_makes_the_real_dataset_the_primary_workflow(self):
+        readme = (Path(__file__).parents[1] / "README.md").read_text()
+
+        self.assertIn("python3 run_kaggle_pipeline.py\n", readme)
+        self.assertIn("Optional synthetic quick demo", readme)
 
 
 if __name__ == "__main__":
