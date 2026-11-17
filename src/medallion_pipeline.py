@@ -1,9 +1,40 @@
 """A dependency-free, synthetic Medallion pipeline example."""
 
+import csv
 from collections import defaultdict
+from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 
 
 REQUIRED_FIELDS = ("transaction_id", "event_timestamp", "amount_cents", "currency")
+
+
+def load_online_retail_csv(path: Path) -> list[dict]:
+    """Normalize Kaggle's Online Retail CSV into valid, purchase-only line records."""
+    records = []
+    # Kaggle's file includes Latin-1 product descriptions such as the pound symbol.
+    with path.open(newline="", encoding="latin-1") as source:
+        for line_number, row in enumerate(csv.DictReader(source), start=1):
+            invoice = row["InvoiceNo"].strip()
+            quantity = int(row["Quantity"])
+            unit_price = Decimal(row["UnitPrice"])
+            if invoice.startswith("C") or quantity <= 0 or unit_price <= 0:
+                continue
+
+            timestamp = datetime.strptime(row["InvoiceDate"], "%m/%d/%y %H:%M").replace(tzinfo=timezone.utc)
+            amount_cents = int((Decimal(quantity) * unit_price * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+            if amount_cents <= 0:
+                continue
+            records.append(
+                {
+                    "transaction_id": f"{invoice}-{row['StockCode'].strip()}-{line_number}",
+                    "event_timestamp": timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "amount_cents": amount_cents,
+                    "currency": "GBP",
+                }
+            )
+    return records
 
 
 def build_silver(records: list[dict]) -> list[dict]:
